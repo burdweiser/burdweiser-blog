@@ -1,49 +1,346 @@
 ---
-import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
-import Header from '../components/Header.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+
+const posts = (await getCollection('blog'))
+  .filter(p => !p.data.draft)
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 6);
+
+function formatDate(d: Date) {
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+const topics = [
+  { name: 'VMware / VCF', slug: 'vmware' },
+  { name: 'Kubernetes', slug: 'kubernetes' },
+  { name: 'NVIDIA / AI Infra', slug: 'nvidia' },
+  { name: 'Networking', slug: 'networking' },
+  { name: 'Homelab', slug: 'homelab' },
+  { name: 'Deep Dives', slug: 'deep-dives' },
+];
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-	</head>
-	<body>
-		<Header />
-		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
-			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This template
-				serves as a lightweight, minimally-styled starting point for anyone looking to build a personal
-				website, blog, or portfolio with Astro.
-			</p>
-			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
-			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
-			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
-			</ul>
-			<p>
-				Have fun! If you get stuck, remember to
-				<a href="https://docs.astro.build/">read the docs</a>
-				or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
-			</p>
-			<p>
-				Looking for a blog template with a bit more personality? Check out
-				<a href="https://github.com/Charca/astro-blog-template">astro-blog-template</a>
-				by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
-			</p>
-		</main>
-		<Footer />
-	</body>
-</html>
+<BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container hero-inner">
+      <div class="hero-eyebrow">infrastructure · ai · virtualization</div>
+      <h1 class="hero-title">Virtually Wiser<span class="cursor">_</span></h1>
+      <p class="hero-sub">
+        VMware/VCF, NVIDIA data center, Kubernetes, AI infrastructure, and homelab engineering —
+        written by a practitioner in Houston, TX.
+      </p>
+      <div class="hero-tags">
+        {['VMware','Kubernetes','NVIDIA','NSX-T','vSAN','AI Infra','Homelab','VCF'].map(t => (
+          <span class="hero-tag">{t}</span>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Main content -->
+  <div class="container page-body">
+    <div class="layout">
+
+      <!-- Posts column -->
+      <div class="posts-col">
+        <div class="col-header">
+          <span class="col-label">Latest Posts</span>
+          <a href="/blog" class="col-more">View all →</a>
+        </div>
+
+        {posts.length === 0 ? (
+          <div class="empty-state">
+            <p>Posts coming soon. Check back shortly.</p>
+          </div>
+        ) : (
+          posts.map(post => (
+            <article class="post-card">
+              <div class="post-meta">
+                <time datetime={post.data.pubDate.toISOString()} class="post-date">
+                  {formatDate(post.data.pubDate)}
+                </time>
+                {post.data.tags?.slice(0,2).map((tag: string) => (
+                  <span class={`pill ${tag.toLowerCase().replace(/[^a-z]/g,'').slice(0,6)}`}>{tag}</span>
+                ))}
+              </div>
+              <h2 class="post-title">
+                <a href={`/blog/${post.slug}/`}>{post.data.title}</a>
+              </h2>
+              {post.data.summary && (
+                <p class="post-excerpt">{post.data.summary}</p>
+              )}
+              <a href={`/blog/${post.slug}/`} class="post-read">Read more →</a>
+            </article>
+          ))
+        )}
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="sidebar">
+
+        <div class="sidebar-block">
+          <div class="sidebar-label">About</div>
+          <p class="about-name">James Burd</p>
+          <p class="about-role">Infrastructure Engineer · Houston, TX</p>
+          <p class="about-bio">
+            Writing about enterprise virtualization, AI/ML infrastructure, and Kubernetes
+            from the perspective of someone who actually runs it.
+          </p>
+          <a href="/about" class="about-link">More about me →</a>
+        </div>
+
+        <div class="sidebar-block">
+          <div class="sidebar-label">Topics</div>
+          <ul class="topic-list">
+            {topics.map(t => (
+              <li>
+                <a href={`/blog?tag=${t.slug}`} class="topic-item">
+                  <span>{t.name}</span>
+                  <span class="topic-arrow">→</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div class="sidebar-block">
+          <div class="sidebar-label">Deep Dives</div>
+          <p class="deep-note">Long-form technical guides and walkthroughs.</p>
+          <a href="/deep-dives" class="about-link">Browse deep dives →</a>
+        </div>
+
+        <div class="sidebar-block">
+          <div class="sidebar-label">Connect</div>
+          <div class="connect-links">
+            <a href="https://github.com/burdweiser" target="_blank" rel="noopener">GitHub</a>
+            <a href="/rss.xml">RSS Feed</a>
+          </div>
+        </div>
+
+      </aside>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  /* Hero */
+  .hero {
+    border-bottom: 0.5px solid var(--border);
+    padding: 56px 0 44px;
+    background: var(--bg);
+  }
+  .hero-inner { max-width: var(--max-w); }
+  .hero-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  .hero-title {
+    font-family: var(--font-mono);
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 500;
+    letter-spacing: -1px;
+    color: var(--text);
+    margin-bottom: 16px;
+    line-height: 1.15;
+  }
+  .cursor {
+    color: var(--accent);
+    animation: blink 1s step-end infinite;
+    margin-left: 2px;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .hero-sub {
+    font-size: 15px;
+    color: var(--text2);
+    max-width: 560px;
+    margin-bottom: 24px;
+    line-height: 1.7;
+  }
+  .hero-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .hero-tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    padding: 3px 10px;
+    border: 0.5px solid var(--border2);
+    border-radius: 3px;
+    color: var(--text2);
+    cursor: default;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .hero-tag:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Page layout */
+  .page-body { padding-top: 0; }
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 0;
+    border-left: 0.5px solid var(--border);
+    border-right: 0.5px solid var(--border);
+  }
+
+  /* Posts column */
+  .posts-col {
+    border-right: 0.5px solid var(--border);
+    min-width: 0;
+  }
+  .col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px 12px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .col-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-weight: 500;
+  }
+  .col-more {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .col-more:hover { text-decoration: underline; }
+
+  .post-card {
+    padding: 22px 28px;
+    border-bottom: 0.5px solid var(--border);
+    transition: background 0.15s;
+  }
+  .post-card:hover { background: var(--bg2); }
+  .post-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .post-date {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.02em;
+  }
+  .post-title {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    margin-bottom: 6px;
+    letter-spacing: -0.2px;
+  }
+  .post-title a {
+    color: var(--text);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .post-title a:hover { color: var(--accent); text-decoration: none; }
+  .post-excerpt {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.6;
+    margin-bottom: 8px;
+  }
+  .post-read {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .post-read:hover { text-decoration: underline; }
+
+  .empty-state {
+    padding: 40px 28px;
+    color: var(--text2);
+    font-size: 14px;
+  }
+
+  /* Sidebar */
+  .sidebar { min-width: 0; }
+  .sidebar-block {
+    padding: 18px 20px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .sidebar-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+  .about-name {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .about-role {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.03em;
+    margin-bottom: 10px;
+  }
+  .about-bio { font-size: 12px; color: var(--text2); line-height: 1.6; margin-bottom: 10px; }
+  .about-link {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .about-link:hover { text-decoration: underline; }
+
+  .topic-list { list-style: none; }
+  .topic-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 0.5px solid var(--border);
+    font-size: 12px;
+    color: var(--text2);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .topic-list li:last-child .topic-item { border-bottom: none; }
+  .topic-item:hover { color: var(--text); text-decoration: none; }
+  .topic-arrow { color: var(--text3); font-size: 11px; }
+
+  .deep-note { font-size: 12px; color: var(--text2); line-height: 1.6; margin-bottom: 10px; }
+
+  .connect-links { display: flex; flex-direction: column; gap: 4px; }
+  .connect-links a {
+    font-size: 12px;
+    color: var(--text2);
+    text-decoration: none;
+    padding: 3px 0;
+    transition: color 0.15s;
+  }
+  .connect-links a:hover { color: var(--text); text-decoration: none; }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .layout { grid-template-columns: 1fr; }
+    .posts-col { border-right: none; }
+    .sidebar { border-top: 0.5px solid var(--border); }
+  }
+</style>

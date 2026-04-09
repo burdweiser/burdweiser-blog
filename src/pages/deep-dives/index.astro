@@ -1,0 +1,117 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog'))
+  .filter(p => !p.data.draft && p.data.tags?.includes('deep-dive'))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+function formatDate(d: Date) {
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+---
+
+<BaseLayout title="Deep Dives — Burdweiser.com" description="Long-form technical guides on VMware, Kubernetes, NVIDIA, and AI infrastructure.">
+  <div class="container page-wrap">
+    <div class="page-header">
+      <div class="page-eyebrow">long-form guides</div>
+      <h1>Deep Dives</h1>
+      <p class="page-sub">
+        Comprehensive walkthroughs, architecture guides, and technical deep dives.
+        These take longer to read — and longer to write.
+      </p>
+    </div>
+
+    {posts.length === 0 ? (
+      <div class="empty">
+        <p>Deep dives coming soon. These are the long-form guides — they take a bit longer to get right.</p>
+      </div>
+    ) : (
+      <div class="deep-list">
+        {posts.map(post => (
+          <article class="deep-item">
+            <div class="deep-meta">
+              <time class="post-date" datetime={post.data.pubDate.toISOString()}>
+                {formatDate(post.data.pubDate)}
+              </time>
+              {post.data.readingTime && (
+                <span class="read-time">{post.data.readingTime} min read</span>
+              )}
+            </div>
+            <h2 class="deep-title">
+              <a href={`/blog/${post.slug}/`}>{post.data.title}</a>
+            </h2>
+            {post.data.summary && (
+              <p class="deep-excerpt">{post.data.summary}</p>
+            )}
+            <div class="deep-tags">
+              {post.data.tags?.filter((t: string) => t !== 'deep-dive').map((tag: string) => (
+                <span class={`pill ${tag.toLowerCase().replace(/[^a-z]/g,'').slice(0,6)}`}>{tag}</span>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+  .page-wrap { padding-top: 0; }
+  .page-header {
+    padding: 48px 0 36px;
+    border-bottom: 0.5px solid var(--border);
+    margin-bottom: 0;
+  }
+  .page-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-family: var(--font-mono);
+    font-size: 2rem;
+    font-weight: 500;
+    letter-spacing: -0.5px;
+    margin-bottom: 10px;
+  }
+  .page-sub { font-size: 14px; color: var(--text2); max-width: 560px; line-height: 1.6; }
+
+  .empty { padding: 48px 0; color: var(--text2); font-size: 14px; }
+
+  .deep-list { border-bottom: 0.5px solid var(--border); }
+  .deep-item {
+    padding: 28px 0;
+    border-bottom: 0.5px solid var(--border);
+    transition: background 0.15s;
+  }
+  .deep-item:last-child { border-bottom: none; }
+  .deep-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .post-date, .read-time {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.02em;
+  }
+  .read-time::before { content: '·'; margin-right: 12px; }
+  .deep-title {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: -0.3px;
+    margin-bottom: 10px;
+    line-height: 1.35;
+  }
+  .deep-title a { color: var(--text); text-decoration: none; transition: color 0.15s; }
+  .deep-title a:hover { color: var(--accent); text-decoration: none; }
+  .deep-excerpt { font-size: 13px; color: var(--text2); line-height: 1.65; margin-bottom: 12px; max-width: 680px; }
+  .deep-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+</style>
