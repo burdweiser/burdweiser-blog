@@ -1,20 +1,152 @@
 ---
-import { type CollectionEntry, getCollection, render } from 'astro:content';
-import BlogPost from '../../layouts/BlogPost.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
-	const posts = await getCollection('blog');
-	return posts.map((post) => ({
-		params: { slug: post.id },
-		props: post,
-	}));
+  const posts = await getCollection('blog');
+  return posts.map(post => ({
+    params: { slug: post.slug },
+    props: post,
+  }));
 }
-type Props = CollectionEntry<'blog'>;
 
 const post = Astro.props;
-const { Content } = await render(post);
+const { Content } = await post.render();
+
+function formatDate(d: Date) {
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
 ---
 
-<BlogPost {...post.data}>
-	<Content />
-</BlogPost>
+<BaseLayout title={`${post.data.title} — Burdweiser.com`} description={post.data.description}>
+  <div class="container post-wrap">
+    <div class="post-header">
+      <div class="post-meta">
+        <time datetime={post.data.pubDate.toISOString()} class="post-date">
+          {formatDate(post.data.pubDate)}
+        </time>
+        {post.data.tags?.map((tag: string) => (
+          <span class={`pill ${tag.toLowerCase().replace(/[^a-z]/g,'').slice(0,6)}`}>{tag}</span>
+        ))}
+      </div>
+      <h1>{post.data.title}</h1>
+      {post.data.description && (
+        <p class="post-desc">{post.data.description}</p>
+      )}
+    </div>
+
+    <div class="post-body prose">
+      <Content />
+    </div>
+
+    <div class="post-footer">
+      <a href="/blog" class="back-link">← Back to blog</a>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .post-wrap { padding-top: 0; max-width: 740px; }
+  .post-header {
+    padding: 48px 0 32px;
+    border-bottom: 0.5px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .post-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .post-date {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.02em;
+  }
+  h1 {
+    font-family: var(--font-mono);
+    font-size: clamp(1.4rem, 3vw, 1.9rem);
+    font-weight: 500;
+    letter-spacing: -0.5px;
+    line-height: 1.25;
+    margin-bottom: 14px;
+    color: var(--text);
+  }
+  .post-desc {
+    font-size: 15px;
+    color: var(--text2);
+    line-height: 1.65;
+  }
+  .post-body {
+    padding-bottom: 48px;
+  }
+  .post-body :global(h1) { display: none; }
+  .post-body :global(h2) {
+    font-family: var(--font-mono);
+    font-size: 1.15rem;
+    font-weight: 500;
+    margin: 2.5rem 0 0.75rem;
+    color: var(--text);
+    padding-top: 1.5rem;
+    border-top: 0.5px solid var(--border);
+  }
+  .post-body :global(h3) {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 1.75rem 0 0.5rem;
+    color: var(--text);
+  }
+  .post-body :global(p) { margin-bottom: 1.25rem; font-size: 15px; line-height: 1.75; }
+  .post-body :global(ul), .post-body :global(ol) {
+    padding-left: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .post-body :global(li) { margin-bottom: 0.4rem; font-size: 15px; line-height: 1.7; }
+  .post-body :global(strong) { font-weight: 500; color: var(--text); }
+  .post-body :global(code) {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .post-body :global(pre) {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 4px;
+    padding: 1.25rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+  }
+  .post-body :global(pre code) {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 13px;
+  }
+  .post-body :global(blockquote) {
+    border-left: 3px solid var(--accent);
+    padding-left: 1rem;
+    color: var(--text2);
+    margin: 1.5rem 0;
+  }
+  .post-body :global(hr) {
+    border: none;
+    border-top: 0.5px solid var(--border);
+    margin: 2rem 0;
+  }
+  .post-footer {
+    padding: 24px 0 48px;
+    border-top: 0.5px solid var(--border);
+  }
+  .back-link {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .back-link:hover { text-decoration: underline; }
+</style>
