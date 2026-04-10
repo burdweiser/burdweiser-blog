@@ -1,3 +1,10 @@
+---
+title: "Tanzu Migration Best Practices: A Practical Guide for Enterprise Teams"
+description: "Best practices for migrating VMware Tanzu workloads, covering discovery, TKGm to TKGs/VKS migration, stateful apps, GitOps adoption, and post-migration validation."
+pubDate: 2026-04-10
+tags: ["vmware", "tanzu", "kubernetes"]
+draft: false
+---
 # Tanzu Migration Best Practices: A Practical Guide for Enterprise Teams
 
 **Date:** April 10, 2026  
