@@ -33,12 +33,12 @@ function formatDate(d: Date) {
               ))}
             </div>
             <h2 class="post-title">
-              <a href={`/blog/${post.slug}/`}>{post.data.title}</a>
+              <a href={`/blog/${post.id}/`}>{post.data.title}</a>
             </h2>
             {post.data.description && (
               <p class="post-excerpt">{post.data.description}</p>
             )}
-            <a href={`/blog/${post.slug}/`} class="post-read">Read more →</a>
+            <a href={`/blog/${post.id}/`} class="post-read">Read more →</a>
           </article>
         ))}
       </div>
