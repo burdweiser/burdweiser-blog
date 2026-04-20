@@ -10,7 +10,7 @@ draft: false
 
 VMware vSphere Lifecycle Manager exists. Dell OpenManage Enterprise exists. The VMware Hardware Compatibility Guide exists. What does not exist is a tool that takes all three simultaneously and tells you whether your current driver and firmware are a validated pair on the HCL — across every host in your environment — without manual baseline setup per cluster and without requiring you to already know which pairs are valid.
 
-That gap is not theoretical. It causes production outages. This post explains how it happens, what it looks like in production, and how HCLCheck closes it.
+That gap is not theoretical. It causes outages. This post explains how it happens, what it looks like when you run a scan, and how HCLCheck closes it.
 
 ## Why vLCM and OME Both Miss This
 
@@ -66,17 +66,17 @@ HCLCheck validates driver and firmware as a combined unit. A driver that is on t
 
 OME inventory includes firmware entries for every server component: individual drives with build label versions like BJ07, BOSS SSDs, backplanes, NICs, PSUs. Matching PERC entries by device name strings is unreliable — naming varies across firmware versions and OME releases. HCLCheck uses the InstanceId field pattern to identify RAID controller entries specifically: `301_C_RAID` for H755 controllers, `401_C_RAID` for H965 controllers. BOSS and disk bay entries are explicitly excluded by InstanceId prefix. On certain server platforms, the BOSS SSD InstanceId shares a prefix with the PERC controller — the script detects this ambiguity and flags those hosts for manual verification rather than producing a false result.
 
-## What Production Runs Found
+## What Scans Found
 
-When run against a production environment, HCLCheck surfaced several compliance issues that had gone undetected through normal patching processes.
+When run across numerous test and third-party lab environments, HCLCheck consistently surfaced compliance issues that had gone undetected through standard patching processes. The patterns repeated across different hardware configurations.
 
-On the PERC H755 side: the majority of affected hosts were running firmware 52.26.0-5179 paired with driver 7.728.02.00-1vmw — firmware that does not appear in the VMware HCL for any driver version, placing those hosts in a technically unsupported state. One host had firmware correctly updated to the 52.30.0-6115 target but the driver had not been updated to match, creating a mismatched pair from the same root cause operating in reverse.
+On the PERC H755 side: the most common finding was hosts running firmware 52.26.0-5179 paired with driver 7.728.02.00-1vmw — firmware that does not appear in the VMware HCL for any driver version, placing those hosts in a technically unsupported state. A secondary finding was hosts where firmware had been correctly updated to the 52.30.0-6115 target but the driver had not been updated to match, creating a mismatched pair from the same root cause operating in reverse.
 
-On the PERC H965 side: several hosts were running driver sub-revision 8.11.1.0.0.0-1OEM. The VMware HCL lists 8.11.0.0.0 as valid; the .1 sub-revision is not listed and is therefore unvalidated. Two additional hosts had the driver updated to 8.14.2 but firmware remaining at 8.11.2, producing another unvalidated pair from the same independent-update pattern.
+On the PERC H965 side: hosts running driver sub-revision 8.11.1.0.0.0-1OEM appeared regularly. The VMware HCL lists 8.11.0.0.0 as valid; the .1 sub-revision is not listed and is therefore unvalidated. Hosts with the driver updated to 8.14.2 but firmware remaining at 8.11.2 also appeared — another unvalidated pair produced by the same independent-update pattern.
 
-On the FC HBA side: multiple production clusters were found running non-validated OEM lpfc drivers. Active virtual machine stalls were observed on one cluster during a fabric event. One cluster running SQL Server Always On workloads was found to have an ESXi 7.x era lpfc 14.2.x driver on ESXi 8.0 U3 — the highest-priority finding given the data integrity risk from potential VM crashes on a cluster with availability group databases.
+On the FC HBA side: hosts upgraded from ESXi 7.x using Dell customized images consistently carried forward non-validated OEM lpfc drivers onto ESXi 8.0 U3. In environments where FC fabric events had occurred, virtual machine stalls were correlated with hosts running the non-inbox lpfc driver. The OEM lpfc finding is the highest-priority result the tool produces — the PSOD risk is documented and the remediation path (switching to VMware inbox drivers) is straightforward.
 
-None of these findings were surfaced by existing OME baseline reports or vLCM compliance checks.
+None of these findings were surfaced by OME baseline reports or vLCM compliance checks in the environments where they were discovered.
 
 ## The HCL Reference Table
 
@@ -92,4 +92,4 @@ The full script is available on GitHub. It includes the HCL reference table for 
 
 If your environment includes controllers or adapters beyond the default entries, add the validated pairs for your hardware and submit a pull request. Every validated pair you add makes the tool more useful for the next engineer who runs it against similar hardware. The VMware HCL is updated regularly — new validated combinations appear with each ESXi update cycle, and the reference table needs to keep pace.
 
-The gap between "patched according to the vendor" and "validated according to VMware" is real, it is common, and it causes production incidents. Running this script after each patching cycle closes that gap in a few minutes.
+The gap between "patched according to the vendor" and "validated according to VMware" is real, it is common, and it causes incidents. Running this script after each patching cycle closes that gap in a few minutes.
