@@ -1,7 +1,10 @@
-# Planning Your VCF 9.1 Upgrade from vSphere 8 U3i
-
-*Published: June 15, 2026*
-
+---
+title: "Planning Your VCF 9.1 Upgrade from vSphere 8 U3i"
+description: "A practical planning guide for VCF customers upgrading from vSphere 8 Update 3i — covering domain topology decisions, storage options, NSX requirements, and the sequencing that actually matters before you touch a host."
+pubDate: "2026-07-23"
+tags: ["vmware", "vcf", "vsphere", "esxi", "upgrade", "infrastructure"]
+draft: false
+---
 If you're running vSphere 8 Update 3i today and you're a VMware Cloud Foundation (VCF) customer — not a VMware vSphere Foundation (VVF) customer — you have a decision in front of you that's bigger than a typical point-release upgrade. Moving to VCF 9.1 isn't just about newer ESXi and vCenter builds. It's about deciding how your management stack is going to be architected for the next several years: which domain model you land on, how you handle NSX, and how much of your existing storage investment carries forward.
 
 That distinction between VCF and VVF matters from the first planning conversation. VVF customers stop at vSphere, vSAN, and Aria Operations — there's no SDDC Manager, no NSX Manager, and no fleet-level domain model to design around. VCF customers are signing up for the full stack: SDDC Manager-managed domains, a mandatory NSX Manager, and Aria/VCF Automation as part of the fleet. Everything below assumes you're going the full VCF route, because the domain and networking decisions simply don't apply the same way to a VVF-only deployment.
