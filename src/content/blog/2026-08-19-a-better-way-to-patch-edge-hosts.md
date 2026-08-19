@@ -39,7 +39,7 @@ A web portal running on Windows Server 2025 / IIS that wraps the vCenter REST AP
   Full-screen version: <a href="/tools/esxi-patching-portal/esxi-patching-portal.html" target="_blank">open in new tab ↗</a>
 </p>
 
-The demo simulates a query against a "Branch Offices" datacenter with 100 standalone hosts, shows the ESXi version and vLCM target image for each site, and walks through the full batch job creation wizard. The active jobs view shows what a running batch looks like in production — per-site state, VM power status, vLCM remediation percentage.
+The demo simulates a query against a datacenter with 100 standalone hosts in a lab environment, shows the ESXi version and vLCM target image for each site, and walks through the full batch job creation wizard. The active jobs view shows what a running batch looks like — per-site state, VM power status, vLCM remediation percentage.
 
 ## The Architecture
 
@@ -98,7 +98,7 @@ Invoke-RestMethod -Method Get -Uri "$vcUrl/api/session" -Headers $headers | Out-
 
 ## Standalone-Only Host Filtering
 
-The "Branch Offices" datacenter object in our vCenter contains both standalone hosts and some clustered hosts used for other workloads. Clustered hosts have their own patching process — this portal touches standalone hosts only. The PowerCLI filter:
+In this lab setup, the datacenter contains both standalone hosts and some clustered hosts used for other workloads. Clustered hosts have their own patching process — this portal touches standalone hosts only. The PowerCLI filter:
 
 ```powershell
 $dc       = Get-Datacenter -Name $DatacenterName -ErrorAction Stop
@@ -126,9 +126,13 @@ The live `SiteVMs` table is what jobs actually read at execution time. It's kept
 
 If you want to build this yourself, here are the two pieces that require the most SQL/PowerShell work:
 
-- **[Get-HostInventory.ps1](/tools/esxi-patching-portal/Get-HostInventory.ps1)** — the PowerCLI script that discovers standalone hosts, classifies VMs by type, and writes inventory + snapshots to SQL via MERGE. Runs under `svc-esxipatch`. Parameterized for vCenter FQDN, datacenter name, SQL server, and credential file path.
+All files are in the [burdweiser/edge-patching](https://github.com/burdweiser/edge-patching) repo on GitHub.
 
-- **[esxi-portal-schema.sql](/tools/esxi-patching-portal/esxi-portal-schema.sql)** — complete `CREATE TABLE` script for all six tables (`QueryRuns`, `SiteVMs`, `VMInventorySnapshots`, `Jobs`, `JobSites`, `AuditLog`) plus GRANT statements for both service accounts. Send this to your DBA to run against a new database.
+- **[Get-HostInventory.ps1](https://github.com/burdweiser/edge-patching/raw/main/Get-HostInventory.ps1)** — the PowerCLI script that discovers standalone hosts, classifies VMs by type, and writes inventory + snapshots to SQL via MERGE. Parameterized for vCenter FQDN, datacenter name, SQL server, and credential file path.
+
+- **[esxi-portal-schema.sql](https://github.com/burdweiser/edge-patching/raw/main/esxi-portal-schema.sql)** — complete `CREATE TABLE` script for all six tables (`QueryRuns`, `SiteVMs`, `VMInventorySnapshots`, `Jobs`, `JobSites`, `AuditLog`) plus GRANT statements for both service accounts. Send this to your DBA to run against a new database.
+
+- **[esxi-patching-portal.html](https://github.com/burdweiser/edge-patching/raw/main/esxi-patching-portal.html)** — the full portal frontend as a standalone HTML file. Save and open locally to explore the interface without any backend.
 
 Both files are generic — no internal hostnames, no company names, no hardcoded credentials. Swap in your own values where the comments tell you to.
 
@@ -140,4 +144,4 @@ A few things are still on the list:
 - **Automatic rollback.** If vLCM remediation fails mid-job, the script flags the site as failed and moves on. There's no automatic restore-from-snapshot logic — that's a manual recovery step.
 - **vCenter event attribution per-operator.** Every vCenter event shows `svc-esxipatch` as the actor because that's the account making the API calls. The portal's audit log has the submitting operator's name, but it's in SQL, not in vCenter. If native vCenter attribution matters, you'd need to use the operator's session token for the API calls instead of a service account — which gets complicated fast given token expiry.
 
-For our environment, those are acceptable tradeoffs. If you're building something similar, they're worth knowing about before you get too far down the road.
+For this use case, those are acceptable tradeoffs. If you're building something similar, they're worth knowing about before you get too far down the road.
