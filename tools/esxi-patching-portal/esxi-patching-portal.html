@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VMware Branch Remediation Portal v2</title>
+<style>
+:root {
+  --bg:#f0f2f5; --surface:#fff; --surface2:#f8f9fb; --header:#1b2a47; --header2:#243356;
+  --accent:#0a7abf; --accent-hover:#085f96; --accent-light:#e8f4fd;
+  --success:#28a745; --success-light:#e8f5ec;
+  --warning:#e08900; --warning-light:#fff8e1;
+  --danger:#dc3545; --danger-light:#fdecea;
+  --muted:#6c757d; --border:#dee2e6; --border2:#e9ecef;
+  --text:#212529; --text2:#495057;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* HEADER */
+.app-header{background:var(--header);color:white;padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.3);z-index:100}
+.header-brand{display:flex;align-items:center;gap:12px}
+.vmw-logo{width:28px;height:28px;background:#00b2e3;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:11px;color:white}
+.header-title{font-size:15px;font-weight:600}
+.header-subtitle{font-size:11px;color:#8fa3c7;margin-top:1px}
+.header-right{display:flex;align-items:center;gap:14px}
+.vcenter-badge{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:4px 12px;font-size:11px;color:#aec6e8}
+.dot{width:7px;height:7px;border-radius:50%;background:#4caf50}
+.user-chip{display:flex;align-items:center;gap:8px;color:#c8d8f0;font-size:12px}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:#3a5a9c;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white}
+
+/* TOOLBAR */
+.toolbar{background:var(--header2);padding:8px 20px;display:flex;align-items:center;gap:10px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.05)}
+.btn{padding:6px 14px;border-radius:5px;border:none;cursor:pointer;font-size:12px;font-weight:500;transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-primary{background:var(--accent);color:white}.btn-primary:hover{background:var(--accent-hover)}.btn-primary:disabled{background:#5a8aac;cursor:not-allowed}
+.btn-success{background:var(--success);color:white}.btn-success:hover{background:#1e7e34}
+.btn-danger{background:var(--danger);color:white}.btn-danger:hover{background:#bd2130}
+.btn-outline{background:transparent;color:#aec6e8;border:1px solid rgba(255,255,255,.2)}.btn-outline:hover{background:rgba(255,255,255,.08)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2)}.btn-ghost:hover{background:var(--surface2)}
+.btn-cancel{background:#6c3347;color:#ffb3c0;border:1px solid #8a4060}.btn-cancel:hover{background:#7d3a53}
+.btn-sm{padding:4px 10px;font-size:11px}
+.toolbar-info{color:#8fa3c7;font-size:11px}
+.spin{animation:spin 1.5s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* LAYOUT */
+.main{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:270px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{padding:12px 14px;border-bottom:1px solid var(--border2);background:var(--surface2)}
+.sidebar-header h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:8px}
+.search-box{position:relative}
+.search-box input{width:100%;padding:6px 10px 6px 28px;border:1px solid var(--border);border-radius:5px;font-size:12px;outline:none}
+.search-box input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(10,122,191,.12)}
+.search-icon{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:12px}
+.sidebar-body{flex:1;overflow-y:auto;padding:4px 0}
+.sidebar-footer{padding:8px 14px;border-top:1px solid var(--border2);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;font-size:11px}
+.host-tree{list-style:none}
+.state-label{display:flex;align-items:center;gap:6px;padding:5px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;user-select:none}
+.state-label:hover{background:var(--surface2)}
+.chevron{font-size:9px;transition:transform .15s}
+.chevron.open{transform:rotate(90deg)}
+.sites-list{list-style:none}
+.site-item{display:flex;align-items:center;gap:8px;padding:4px 14px 4px 26px;cursor:pointer;border-left:3px solid transparent}
+.site-item:hover{background:var(--surface2)}
+.site-item.selected{background:var(--accent-light);border-left-color:var(--accent)}
+.site-item input[type=checkbox]{cursor:pointer;accent-color:var(--accent);width:13px;height:13px;flex-shrink:0}
+.site-name{flex:1;font-size:12px}
+.cbadge{font-size:9px;padding:1px 5px;border-radius:8px;font-weight:700}
+.cbadge.ok{background:var(--success-light);color:#1a7a30}
+.cbadge.needed{background:var(--warning-light);color:#8a5a00}
+
+/* CONTENT */
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.tabs{display:flex;background:var(--surface);border-bottom:2px solid var(--border2);padding:0 20px;flex-shrink:0}
+.tab{padding:11px 16px;cursor:pointer;font-size:12px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;display:flex;align-items:center;gap:6px}
+.tab:hover{color:var(--accent)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.nbadge{font-size:10px;background:var(--accent);color:white;border-radius:10px;padding:1px 6px}
+.nbadge.red{background:var(--danger)}
+.tab-pane{display:none;flex:1;overflow-y:auto;padding:18px 20px}
+.tab-pane.active{display:block}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px}
+.card-header{padding:11px 16px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;background:var(--surface2)}
+.card-header h4{font-size:13px;font-weight:600}
+.card-body{padding:16px}
+
+/* FORM */
+.form-group{margin-bottom:13px}
+.form-group label{display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.form-group label .req{color:var(--danger);margin-left:2px}
+.form-control{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:5px;font-size:12px;background:white;outline:none;color:var(--text)}
+.form-control:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(10,122,191,.12)}
+.form-control.invalid{border-color:var(--danger)}
+select.form-control{cursor:pointer}
+.form-row{display:flex;gap:12px}
+.form-row .form-group{flex:1}
+.help-text{font-size:11px;color:var(--muted);margin-top:3px}
+.tz-label{display:inline-block;background:#e3f2fd;color:#1565c0;font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;margin-left:6px}
+
+/* HOST SELECTION TABLE */
+.host-select-table{width:100%;border-collapse:collapse}
+.host-select-table th{padding:7px 10px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--surface2);border-bottom:2px solid var(--border);position:sticky;top:0;z-index:1}
+.host-select-table td{padding:7px 10px;font-size:12px;border-bottom:1px solid var(--border2);vertical-align:middle}
+.host-select-table tbody tr:hover{background:#fafbfd}
+.host-select-table tbody tr.row-selected{background:var(--accent-light)}
+.host-select-table tbody tr:last-child td{border-bottom:none}
+.host-scroll{max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:6px}
+.select-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:8px;justify-content:space-between}
+.select-toolbar-left{display:flex;align-items:center;gap:8px}
+.select-count{font-size:11px;font-weight:600;color:var(--accent)}
+
+/* DATA TABLE */
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{padding:8px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--surface2);border-bottom:2px solid var(--border)}
+.data-table td{padding:9px 12px;font-size:12px;border-bottom:1px solid var(--border2);vertical-align:middle}
+.data-table tbody tr:hover{background:var(--surface2)}
+.data-table tbody tr:last-child td{border-bottom:none}
+
+/* STATUS PILLS */
+.spill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+.s-running{background:#e3f2fd;color:#1565c0}
+.s-scheduled{background:#f3e5f5;color:#6a1b9a}
+.s-success{background:var(--success-light);color:#1a7a30}
+.s-failed{background:var(--danger-light);color:#a81c2a}
+.s-cancelled{background:#f5f5f5;color:#757575}
+.s-pending{background:var(--warning-light);color:#8a5a00}
+
+/* PROGRESS */
+.progress{background:var(--border2);border-radius:4px;height:6px;overflow:hidden;margin:4px 0}
+.progress-bar{height:100%;border-radius:4px;background:var(--accent);transition:width .5s}
+.progress-bar.g{background:var(--success)}
+
+/* REVIEW PANEL */
+.review-panel{background:#f0f7ff;border:1px solid #bcd8f0;border-radius:8px;padding:16px;margin-top:4px}
+.review-panel h4{font-size:12px;font-weight:700;color:#0a5a8f;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
+.review-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.review-item label{font-size:10px;color:#5a7a9f;font-weight:700;text-transform:uppercase;letter-spacing:.4px;display:block}
+.review-item span{font-size:12px;color:var(--text);font-weight:600}
+.review-sites{margin-top:10px;border-top:1px solid #bcd8f0;padding-top:10px}
+.review-site-chip{display:inline-block;background:white;border:1px solid #bcd8f0;border-radius:4px;padding:2px 8px;font-size:11px;color:#0a5a8f;margin:2px}
+
+/* LOG VIEWER */
+.log-viewer{background:#0e1117;color:#d4d4d4;border-radius:6px;padding:12px;font-family:'Cascadia Code','Consolas',monospace;font-size:11px;max-height:180px;overflow-y:auto;line-height:1.6}
+.log-ts{color:#6a9955}.log-info{color:#9cdcfe}.log-ok{color:#4ec9b0}.log-err{color:#f44747}.log-warn{color:#dcdcaa}
+
+/* JOB CARDS */
+.job-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px}
+.job-card-hdr{padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between}
+.job-card-body{padding:14px 16px}
+.job-meta{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px;font-size:11px;color:var(--muted)}
+.job-meta strong{color:var(--text)}
+.creator-chip{display:inline-flex;align-items:center;gap:5px;background:#e8f0fe;border:1px solid #c5d8f8;border-radius:12px;padding:2px 8px;font-size:10px;font-weight:700;color:#1a56c4}
+.creator-icon{width:16px;height:16px;border-radius:50%;background:#3a5a9c;display:flex;align-items:center;justify-content:center;font-size:8px;color:white;font-weight:700}
+
+/* STATS */
+.stats-row{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px;flex:1;min-width:100px}
+.stat-card.accent{border-left:3px solid var(--accent)}
+.stat-card.success{border-left:3px solid var(--success)}
+.stat-card.warning{border-left:3px solid var(--warning)}
+.stat-card.danger{border-left:3px solid var(--danger)}
+.stat-val{font-size:24px;font-weight:700;line-height:1}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:3px}
+
+/* SECTION DIVIDER */
+.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border2)}
+
+/* ALERT */
+.alert{border-radius:6px;padding:10px 14px;font-size:12px;margin-bottom:12px;display:flex;gap:8px;align-items:flex-start}
+.alert-info{background:var(--accent-light);border:1px solid rgba(10,122,191,.2);color:#0a5a8f}
+.alert-warn{background:var(--warning-light);border:1px solid rgba(224,137,0,.3);color:#7a5000}
+.alert-success{background:var(--success-light);border:1px solid rgba(40,167,69,.25);color:#1a5a2a}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000}
+.modal-overlay.open{display:flex}
+.modal{background:white;border-radius:10px;width:460px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
+.modal-hdr{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2)}
+.modal-hdr h3{font-size:14px;font-weight:600}
+.modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted);line-height:1}
+.modal-body{padding:18px 20px;max-height:70vh;overflow-y:auto}
+.modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--surface2)}
+
+/* VM ORDER LIST */
+.vm-list{list-style:none;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.vm-item{padding:7px 12px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:10px;background:white;cursor:grab}
+.vm-item:last-child{border-bottom:none}
+.vm-item:hover{background:var(--surface2)}
+.drag-h{color:var(--muted)}
+
+/* AUDIT */
+.audit-tag{font-size:10px;padding:1px 7px;border-radius:10px;font-weight:600}
+.at-query{background:#e3f2fd;color:#1565c0}
+.at-created{background:#ede7f6;color:#4527a0}
+.at-start{background:var(--success-light);color:#1a7a30}
+.at-done{background:#e0f2f1;color:#00695c}
+.at-fail{background:var(--danger-light);color:#a81c2a}
+.at-cancel{background:#f5f5f5;color:#757575}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:10px}
+.empty-state h3{font-size:14px;font-weight:600;margin-bottom:6px;color:var(--text2)}
+
+/* STEP INDICATOR */
+.step-bar{display:flex;margin-bottom:20px}
+.step-node{display:flex;flex-direction:column;align-items:center;flex:1}
+.step-circle{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted);position:relative;z-index:1}
+.step-circle.active{background:var(--accent);border-color:var(--accent);color:white}
+.step-circle.done{background:var(--success);border-color:var(--success);color:white}
+.step-lbl{font-size:10px;color:var(--muted);margin-top:4px;text-align:center}
+.step-lbl.active{color:var(--accent);font-weight:600}
+.step-conn{flex:1;height:2px;background:var(--border2);margin-top:14px}
+.step-conn.done{background:var(--success)}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+code{font-family:'Consolas','Cascadia Code',monospace;font-size:11px;background:#f0f0f0;padding:1px 4px;border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="app-header">
+  <div class="header-brand">
+    <div class="vmw-logo">vmw</div>
+    <div>
+      <div class="header-title">Branch Remediation Portal</div>
+      <div class="header-subtitle">vSphere Lifecycle Management · Branch Offices Datacenter</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="vcenter-badge"><div class="dot"></div><span>vcenter.corp.local</span></div>
+    <div class="user-chip" id="userChip" style="display:none">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <div>
+        <div style="font-size:12px;font-weight:600" id="userName">Not authenticated</div>
+        <div style="font-size:10px;color:#8fa3c7" id="userRole"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <button class="btn btn-primary" id="queryBtn" onclick="openAuthModal()">⟳ Query Hosts</button>
+  <button class="btn btn-success" id="newJobBtn" style="display:none" onclick="switchTab('batch');resetBatchForm()">+ New Batch Job</button>
+  <button class="btn btn-outline btn-sm" id="precheckBtn" style="display:none" onclick="runPrecheck()">✓ Pre-Check All</button>
+  <span class="toolbar-info" id="queryStatus"></span>
+  <span style="margin-left:auto;color:#8fa3c7;font-size:11px" id="lastQueried"></span>
+  <button class="btn btn-outline btn-sm" onclick="openModal('settingsModal')">⚙ Settings</button>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h3>Branch Inventory</h3>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:4px">
+        <span style="background:#e8f5ec;color:#1a7a30;border-radius:3px;padding:1px 5px;font-weight:700">Standalone only</span>
+        Clustered hosts excluded
+      </div>
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="sideSearch" placeholder="Filter sites..." oninput="renderSideTree(this.value)" disabled>
+      </div>
+    </div>
+    <div class="sidebar-body">
+      <div id="sideTree">
+        <div class="empty-state" style="padding:36px 14px">
+          <div class="empty-icon">🖥</div>
+          <h3>No Hosts Loaded</h3>
+          <p style="font-size:11px">Click <strong>Query Hosts</strong><br>to load inventory</p>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <span style="color:var(--muted)">Total sites</span>
+      <span id="totalSites" style="font-weight:700;color:var(--accent)">—</span>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('batch')">📋 Create Batch Job</div>
+      <div class="tab" onclick="switchTab('active')">⚙️ Active / Scheduled <span class="nbadge" id="activeCount">2</span></div>
+      <div class="tab" onclick="switchTab('history')">📜 Job History</div>
+      <div class="tab" onclick="switchTab('reports')">📊 Reports</div>
+      <div class="tab" onclick="switchTab('audit')">🔐 Audit Log</div>
+    </div>
+
+    <!-- ============ CREATE BATCH JOB ============ -->
+    <div class="tab-pane active" id="tab-batch">
+
+      <!-- Not queried yet -->
+      <div id="batchNotQueried" class="empty-state">
+        <div class="empty-icon">📋</div>
+        <h3>Authenticate First</h3>
+        <p>Click <strong>Query Hosts</strong> in the toolbar to load<br>the Branch Offices inventory from vCenter.</p>
+      </div>
+
+      <!-- Batch Job Form (shown after query) -->
+      <div id="batchForm" style="display:none">
+
+        <!-- STEP INDICATOR -->
+        <div class="step-bar" id="stepBar">
+          <div class="step-node"><div class="step-circle active" id="sc1">1</div><div class="step-lbl active" id="sl1">Select Hosts</div></div>
+          <div class="step-conn" id="conn1"></div>
+          <div class="step-node"><div class="step-circle" id="sc2">2</div><div class="step-lbl" id="sl2">Configure Job</div></div>
+          <div class="step-conn" id="conn2"></div>
+          <div class="step-node"><div class="step-circle" id="sc3">3</div><div class="step-lbl" id="sl3">Review &amp; Schedule</div></div>
+        </div>
+
+        <!-- STEP 1: SELECT HOSTS -->
+        <div id="step1">
+          <div class="card">
+            <div class="card-header">
+              <h4>Step 1 — Select Hosts to Include in This Batch</h4>
+              <div class="select-count" id="selCount">0 hosts selected</div>
+            </div>
+            <div class="card-body" style="padding:12px 16px">
+              <div class="alert alert-info" style="margin-bottom:10px;padding:7px 12px;font-size:11px">
+                ℹ️ Only <strong>standalone hosts</strong> from the Branch Offices datacenter are listed below — hosts that are members of a cluster are automatically excluded at query time. <strong>Current Version</strong> reflects what vCenter reported at query time. <strong>Target Image</strong> is the vLCM baseline assigned in vSphere Lifecycle Manager. Hosts showing <span style="color:#c0392b;font-family:monospace;font-weight:700">8.0 U3i</span> <span style="color:#2e7d32">↑</span> <span style="color:#2e7d32;font-family:monospace;font-weight:700">8.0 U3k</span> will be upgraded. Hosts showing <span style="color:#2e7d32;font-weight:700">✓ Up to date</span> are already at the target image and will be skipped.
+              </div>
+              <div class="select-toolbar">
+                <div class="select-toolbar-left">
+                  <button class="btn btn-ghost btn-sm" onclick="selectAllHosts()">☑ Select All</button>
+                  <button class="btn btn-ghost btn-sm" onclick="deselectAllHosts()">☐ Deselect All</button>
+                  <button class="btn btn-ghost btn-sm" onclick="selectNeededOnly()">⚠ Needs Patch Only</button>
+                </div>
+                <input class="form-control" style="width:180px" type="text" placeholder="Filter..." oninput="filterBatchTable(this.value)">
+              </div>
+              <div class="host-scroll">
+                <table class="host-select-table" id="hostSelTable">
+                  <thead>
+                    <tr>
+                      <th style="width:32px"><input type="checkbox" id="masterCb" onchange="toggleAllHosts(this.checked)" style="accent-color:var(--accent)"></th>
+                      <th>Site / Host</th>
+                      <th>State</th>
+                      <th>VMs</th>
+                      <th>Compliance</th>
+                      <th>Current Version</th>
+                      <th>Target Image</th>
+                      <th>VM Order</th>
+                    </tr>
+                  </thead>
+                  <tbody id="hostSelBody"></tbody>
+                </table>
+              </div>
+              <div style="margin-top:10px;text-align:right">
+                <button class="btn btn-primary" onclick="goStep(2)" id="toStep2Btn" disabled>Next: Configure Job →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: CONFIGURE -->
+        <div id="step2" style="display:none">
+          <div class="card">
+            <div class="card-header">
+              <h4>Step 2 — Job Configuration</h4>
+              <button class="btn btn-ghost btn-sm" onclick="goStep(1)">← Back</button>
+            </div>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Job Name <span class="req">*</span></label>
+                  <input class="form-control" type="text" id="jobName" placeholder="e.g. Aug2026-BranchPatch-Wave1" value="Aug2026-BranchPatch-Wave1">
+                </div>
+                <div class="form-group">
+                  <label>Change Ticket # <span class="req">*</span></label>
+                  <input class="form-control" type="text" id="chgTicket" placeholder="CHG0042891">
+                </div>
+              </div>
+
+              <div class="section-title" style="margin:4px 0 10px">Execution Account</div>
+              <div class="form-row">
+                <div class="form-group" style="flex:2">
+                  <label>Run As — Service Account <span class="req">*</span></label>
+                  <input class="form-control" type="text" id="runAsAccount" placeholder="CORP\svc-esxipatch" value="CORP\svc-esxipatch">
+                  <div class="help-text">The Windows Task Scheduler job and all vCenter API calls will authenticate as this account. Must have vCenter permissions to enter maintenance mode and trigger vLCM remediation.</div>
+                </div>
+                <div class="form-group" style="flex:1">
+                  <label>Created By (Audit)</label>
+                  <input class="form-control" id="createdByDisplay" readonly style="background:#f5f5f5;color:var(--muted)" value="">
+                  <div class="help-text">Populated from your authenticated session. Recorded in the audit log — cannot be changed.</div>
+                </div>
+              </div>
+              <div class="alert alert-info" style="margin-top:-4px;margin-bottom:4px;font-size:11px">
+                ℹ️ The service account runs the job. <strong>Created By</strong> logs who scheduled it. These are intentionally separate — the service account is a shared credential; the creator is the individual accountable for the change ticket.
+              </div>
+
+              <div class="section-title" style="margin:4px 0 10px">Scheduled Outage Window</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Start Date <span class="req">*</span></label>
+                  <input class="form-control" type="date" id="schedDate" value="2026-08-24">
+                </div>
+                <div class="form-group">
+                  <label>Start Time <span class="tz-label">CST</span> <span class="req">*</span></label>
+                  <input class="form-control" type="time" id="schedTime" value="02:00" oninput="updateTimeDisplay()">
+                  <div class="help-text" id="timeDisplay">02:00 CST = 08:00 UTC · All times execute in Central Standard Time</div>
+                </div>
+                <div class="form-group">
+                  <label>Expected Duration</label>
+                  <select class="form-control">
+                    <option>~30 minutes per site</option>
+                    <option selected>~45 minutes per site</option>
+                    <option>~60 minutes per site</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="section-title" style="margin:4px 0 10px">Notifications <span class="req">*</span></div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Notify on Success &amp; Failure <span class="req">*</span></label>
+                  <input class="form-control" type="email" id="notifyEmail" placeholder="ops-team@corp.com" required>
+                  <div class="help-text">Separate multiple addresses with commas. Required.</div>
+                </div>
+                <div class="form-group">
+                  <label>Also CC (optional)</label>
+                  <input class="form-control" type="email" placeholder="manager@corp.com">
+                </div>
+              </div>
+
+              <div class="section-title" style="margin:4px 0 10px">Execution Settings</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Max Parallel Sites</label>
+                  <select class="form-control" id="maxParallel">
+                    <option value="1">1 — Sequential</option>
+                    <option value="3">3 sites</option>
+                    <option value="5" selected>5 sites (Recommended)</option>
+                    <option value="10">10 sites</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>VM Power-On Delay</label>
+                  <select class="form-control" id="powerOnDelay">
+                    <option>60 seconds</option>
+                    <option selected>120 seconds</option>
+                    <option>180 seconds</option>
+                    <option>300 seconds</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>On VM Shutdown Failure</label>
+                  <select class="form-control">
+                    <option selected>Halt site · skip remediation · alert</option>
+                    <option>Wait for manual override (30 min max)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Notes (appear in audit log &amp; reports)</label>
+                <input class="form-control" type="text" placeholder="e.g. August 2026 quarterly ESXi 8u3k patching — Wave 1 of 5">
+              </div>
+
+              <div style="text-align:right;margin-top:4px">
+                <button class="btn btn-primary" onclick="goStep(3)">Next: Review &amp; Schedule →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3: REVIEW -->
+        <div id="step3" style="display:none">
+          <div class="card">
+            <div class="card-header">
+              <h4>Step 3 — Review &amp; Confirm</h4>
+              <button class="btn btn-ghost btn-sm" onclick="goStep(2)">← Back</button>
+            </div>
+            <div class="card-body">
+              <div class="alert alert-info">ℹ️ Review the details below carefully. Once scheduled, the job will execute automatically at the specified CST time using your authenticated vCenter credentials (<strong id="reviewUser"></strong>).</div>
+
+              <div class="review-panel">
+                <h4>📋 Job Summary</h4>
+                <div class="review-grid">
+                  <div class="review-item"><label>Job Name</label><span id="rv-name"></span></div>
+                  <div class="review-item"><label>Change Ticket</label><span id="rv-chg"></span></div>
+                  <div class="review-item"><label>Scheduled Time (CST)</label><span id="rv-time"></span></div>
+                  <div class="review-item"><label>Scheduled Time (UTC)</label><span id="rv-utc"></span></div>
+                  <div class="review-item"><label>Sites in Batch</label><span id="rv-sites"></span></div>
+                  <div class="review-item"><label>Max Parallel</label><span id="rv-parallel"></span></div>
+                  <div class="review-item"><label>VM Power-On Delay</label><span id="rv-delay"></span></div>
+                  <div class="review-item"><label>Notification Email</label><span id="rv-email"></span></div>
+                  <div class="review-item"><label>Target vLCM Image</label><span id="rv-image" style="font-family:monospace;color:#2e7d32"></span></div>
+                  <div class="review-item"><label>Image Build #</label><span id="rv-build" style="font-family:monospace;font-size:11px;color:var(--muted)"></span></div>
+                  <div class="review-item"><label>Run As (Service Account)</label><span id="rv-runas" style="font-family:monospace"></span></div>
+                  <div class="review-item"><label>Created By (Audit)</label><span id="rv-creator" style="font-weight:700"></span></div>
+                </div>
+                <div class="review-sites">
+                  <div style="font-size:11px;font-weight:700;color:#0a5a8f;margin-bottom:6px">SITES INCLUDED</div>
+                  <div id="rv-site-chips"></div>
+                </div>
+              </div>
+
+              <div class="alert alert-warn" style="margin-top:12px">⚠️ Confirm that a change ticket has been approved and outage notifications have been sent to site contacts before scheduling.</div>
+
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer">
+                  <input type="checkbox" id="confirmCb" onchange="document.getElementById('scheduleBtn').disabled=!this.checked" style="accent-color:var(--accent)">
+                  I confirm this job has an approved change ticket and is ready to execute
+                </label>
+                <button class="btn btn-success" id="scheduleBtn" onclick="submitJob()" disabled>✓ Create Scheduled Job</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /batchForm -->
+    </div>
+
+    <!-- ============ ACTIVE / SCHEDULED ============ -->
+    <div class="tab-pane" id="tab-active">
+      <div class="stats-row">
+        <div class="stat-card accent"><div class="stat-val">1</div><div class="stat-lbl">Running Jobs</div></div>
+        <div class="stat-card" style="border-left:3px solid #6a1b9a"><div class="stat-val">1</div><div class="stat-lbl">Scheduled Jobs</div></div>
+        <div class="stat-card success"><div class="stat-val">2</div><div class="stat-lbl">Sites Complete</div></div>
+        <div class="stat-card warning"><div class="stat-val">3</div><div class="stat-lbl">In Progress</div></div>
+        <div class="stat-card danger"><div class="stat-val">0</div><div class="stat-lbl">Failed</div></div>
+      </div>
+
+      <!-- SCHEDULED JOBS -->
+      <div class="section-title">Scheduled — Not Yet Started</div>
+      <div class="job-card">
+        <div class="job-card-hdr">
+          <div>
+            <div style="font-size:10px;color:var(--muted);font-weight:700">JOB-2026-0848</div>
+            <div style="font-size:13px;font-weight:600">Aug2026-BranchPatch-Wave2</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="spill s-scheduled">◌ Scheduled</span>
+            <div class="creator-chip"><div class="creator-icon">JS</div>jsmith@corp.local</div>
+            <button class="btn btn-cancel btn-sm" onclick="cancelJob('JOB-2026-0848','Aug2026-BranchPatch-Wave2')">✕ Cancel Job</button>
+          </div>
+        </div>
+        <div class="job-card-body">
+          <div class="job-meta">
+            <span>📅 <strong>Scheduled:</strong> Aug 31, 2026 — 02:00 CST (08:00 UTC)</span>
+            <span>📧 <strong>Notify:</strong> ops-team@corp.com</span>
+            <span>🎫 <strong>Change:</strong> CHG0042910</span>
+            <span>🖥 <strong>Sites:</strong> 8 selected</span>
+            <span>⚡ <strong>Parallel:</strong> 5 max</span>
+            <span>⏱ <strong>VM Delay:</strong> 120s</span>
+            <span>🔑 <strong>Run As:</strong> CORP\svc-esxipatch</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted)">Sites: AL, Birmingham · AR, Fayetteville · AR, Little Rock · AZ, Tempe · AZ, Tucson · CA, Los Angeles · CA, San Diego · CO, Denver</div>
+        </div>
+      </div>
+
+      <!-- RUNNING JOBS -->
+      <div class="section-title">Currently Running</div>
+      <div class="job-card">
+        <div class="job-card-hdr">
+          <div>
+            <div style="font-size:10px;color:var(--muted);font-weight:700">JOB-2026-0847</div>
+            <div style="font-size:13px;font-weight:600">Aug2026-BranchPatch-Wave1</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="spill s-running">● Running</span>
+            <div class="creator-chip"><div class="creator-icon">JS</div>jsmith@corp.local</div>
+            <button class="btn btn-danger btn-sm" onclick="abortJob()">⏹ Abort Job</button>
+          </div>
+        </div>
+        <div class="job-card-body">
+          <div class="job-meta">
+            <span>🕐 <strong>Started:</strong> Aug 24, 2026 — 02:00 CST</span>
+            <span>📧 <strong>Notify:</strong> ops-team@corp.com</span>
+            <span>🎫 <strong>Change:</strong> CHG0042891</span>
+            <span>🖥 <strong>Sites:</strong> 2 / 5 complete</span>
+            <span>⚡ <strong>Parallel:</strong> 5</span>
+            <span>🔑 <strong>Run As:</strong> CORP\svc-esxipatch</span>
+          </div>
+          <div class="progress"><div class="progress-bar" style="width:40%"></div></div>
+          <div style="font-size:11px;color:var(--muted);margin:4px 0 12px">2 of 5 sites complete · Est. 1h 22m remaining</div>
+          <table class="data-table">
+            <thead><tr><th>Site</th><th>Current Step</th><th>Status</th><th>VMs Off</th><th>ESXi Upgrade</th><th>Elapsed</th><th>Log</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><strong>AK, Anchorage</strong></td><td>Powering on VMs (3/4)</td><td><span class="spill s-running">● Running</span></td><td>4/4 ✓</td>
+                <td style="font-size:10px;white-space:nowrap"><span style="color:#c0392b;font-family:monospace">8.0 U3i</span> <span style="color:#2e7d32">↑</span> <span style="color:#2e7d32;font-family:monospace;font-weight:700">8.0 U3k</span></td>
+                <td>58m</td><td><button class="btn btn-ghost btn-sm" onclick="openModal('logModal')">View</button></td>
+              </tr>
+              <tr>
+                <td><strong>AL, Birmingham</strong></td><td>vLCM Remediation</td><td><span class="spill s-running">● Remediating</span></td><td>5/5 ✓</td>
+                <td style="font-size:10px;white-space:nowrap"><span style="color:#c0392b;font-family:monospace">8.0 U3i</span> <span style="color:#2e7d32">↑</span> <span style="color:#2e7d32;font-family:monospace;font-weight:700">8.0 U3k</span></td>
+                <td>42m</td><td><button class="btn btn-ghost btn-sm" onclick="openModal('logModal')">View</button></td>
+              </tr>
+              <tr>
+                <td><strong>AR, Fayetteville</strong></td><td>Graceful VM Shutdown</td><td><span class="spill s-running">● Shutdown</span></td><td>3/5</td>
+                <td style="font-size:10px;white-space:nowrap"><span style="color:#c0392b;font-family:monospace">8.0 U3i</span> <span style="color:#2e7d32">↑</span> <span style="color:#2e7d32;font-family:monospace;font-weight:700">8.0 U3k</span></td>
+                <td>18m</td><td><button class="btn btn-ghost btn-sm" onclick="openModal('logModal')">View</button></td>
+              </tr>
+              <tr>
+                <td><strong>AR, Little Rock</strong></td><td>Maintenance Mode</td><td><span class="spill s-running">● In Maint.</span></td><td>5/5 ✓</td>
+                <td style="font-size:10px;white-space:nowrap"><span style="color:#c0392b;font-family:monospace">8.0 U3i</span> <span style="color:#2e7d32">↑</span> <span style="color:#2e7d32;font-family:monospace;font-weight:700">8.0 U3k</span></td>
+                <td>31m</td><td><button class="btn btn-ghost btn-sm" onclick="openModal('logModal')">View</button></td>
+              </tr>
+              <tr>
+                <td><strong>AZ, Tempe</strong></td><td>Queued</td><td><span class="spill s-pending">◌ Queued</span></td><td>—</td>
+                <td style="font-size:10px;white-space:nowrap;color:var(--muted)">—</td>
+                <td>—</td><td><button class="btn btn-ghost btn-sm" disabled>View</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ HISTORY ============ -->
+    <div class="tab-pane" id="tab-history">
+      <div class="stats-row">
+        <div class="stat-card success"><div class="stat-val">14</div><div class="stat-lbl">Jobs Completed</div></div>
+        <div class="stat-card accent"><div class="stat-val">68</div><div class="stat-lbl">Sites Patched</div></div>
+        <div class="stat-card danger"><div class="stat-val">2</div><div class="stat-lbl">Jobs w/ Failures</div></div>
+        <div class="stat-card"><div class="stat-val">42m</div><div class="stat-lbl">Avg / Site</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h4>All Jobs</h4>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="form-control" style="width:180px" placeholder="Search...">
+            <select class="form-control" style="width:130px"><option>All Statuses</option><option>Completed</option><option>Failed</option><option>Cancelled</option></select>
+            <button class="btn btn-ghost btn-sm">⬇ Export CSV</button>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Job ID</th><th>Name</th><th>Created By</th><th>Scheduled (CST)</th><th>Sites</th><th>Duration</th><th>Status</th><th>Change #</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>JOB-2026-0847</code></td>
+              <td>Aug2026-BranchPatch-Wave1</td>
+              <td><div class="creator-chip"><div class="creator-icon">JS</div>jsmith</div></td>
+              <td>Aug 24, 2026 02:00 CST</td>
+              <td>2/5 ⬤</td>
+              <td>Running</td>
+              <td><span class="spill s-running">● Running</span></td>
+              <td>CHG0042891</td>
+              <td><button class="btn btn-ghost btn-sm">Report</button></td>
+            </tr>
+            <tr>
+              <td><code>JOB-2026-0821</code></td>
+              <td>Jul2026-BranchPatch-Wave3</td>
+              <td><div class="creator-chip"><div class="creator-icon">JS</div>jsmith</div></td>
+              <td>Jul 28, 2026 02:00 CST</td>
+              <td>15/15</td>
+              <td>8h 14m</td>
+              <td><span class="spill s-success">✓ Complete</span></td>
+              <td>CHG0042801</td>
+              <td><button class="btn btn-ghost btn-sm">Report</button></td>
+            </tr>
+            <tr>
+              <td><code>JOB-2026-0814</code></td>
+              <td>Jul2026-BranchPatch-Wave2</td>
+              <td><div class="creator-chip"><div class="creator-icon">BW</div>bwilliams</div></td>
+              <td>Jul 21, 2026 02:00 CST</td>
+              <td>18/20</td>
+              <td>11h 02m</td>
+              <td><span class="spill s-failed">✕ 2 Failed</span></td>
+              <td>CHG0042788</td>
+              <td><button class="btn btn-ghost btn-sm">Report</button></td>
+            </tr>
+            <tr>
+              <td><code>JOB-2026-0710</code></td>
+              <td>Jul2026-BranchPatch-Wave1-TEST</td>
+              <td><div class="creator-chip"><div class="creator-icon">JS</div>jsmith</div></td>
+              <td>Jul 10, 2026 03:00 CST</td>
+              <td>0/1</td>
+              <td>—</td>
+              <td><span class="spill s-cancelled">✕ Cancelled</span></td>
+              <td>CHG0042760</td>
+              <td><button class="btn btn-ghost btn-sm">Report</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ============ REPORTS ============ -->
+    <div class="tab-pane" id="tab-reports">
+      <div class="stats-row">
+        <div class="stat-card success"><div class="stat-val">68</div><div class="stat-lbl">Hosts Patched (2026)</div></div>
+        <div class="stat-card warning"><div class="stat-val">32</div><div class="stat-lbl">Pending Remediation</div></div>
+        <div class="stat-card accent"><div class="stat-val">8u3k</div><div class="stat-lbl">Target Image</div></div>
+        <div class="stat-card"><div class="stat-val">100</div><div class="stat-lbl">Total Branch Sites</div></div>
+      </div>
+      <div style="display:flex;gap:14px">
+        <div class="card" style="flex:1">
+          <div class="card-header"><h4>Compliance by State</h4></div>
+          <table class="data-table">
+            <thead><tr><th>State</th><th>Sites</th><th>Patched</th><th>Pending</th><th>Progress</th></tr></thead>
+            <tbody>
+              <tr><td>AK — Alaska</td><td>1</td><td>1</td><td>0</td><td style="min-width:120px"><div class="progress"><div class="progress-bar g" style="width:100%"></div></div><span style="font-size:10px;color:var(--muted)">100%</span></td></tr>
+              <tr><td>AL — Alabama</td><td>1</td><td>0</td><td>1</td><td><div class="progress"><div class="progress-bar" style="width:0%"></div></div><span style="font-size:10px;color:var(--muted)">0%</span></td></tr>
+              <tr><td>AR — Arkansas</td><td>2</td><td>1</td><td>1</td><td><div class="progress"><div class="progress-bar" style="width:50%"></div></div><span style="font-size:10px;color:var(--muted)">50%</span></td></tr>
+              <tr><td>AZ — Arizona</td><td>2</td><td>2</td><td>0</td><td><div class="progress"><div class="progress-bar g" style="width:100%"></div></div><span style="font-size:10px;color:var(--muted)">100%</span></td></tr>
+              <tr><td>CA — California</td><td>3</td><td>1</td><td>2</td><td><div class="progress"><div class="progress-bar" style="width:33%"></div></div><span style="font-size:10px;color:var(--muted)">33%</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card" style="width:210px">
+          <div class="card-header"><h4>Export</h4></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:7px">
+            <button class="btn btn-ghost btn-sm" style="justify-content:flex-start">📄 Patch Compliance Summary</button>
+            <button class="btn btn-ghost btn-sm" style="justify-content:flex-start">📄 Full Job History (CSV)</button>
+            <button class="btn btn-ghost btn-sm" style="justify-content:flex-start">📄 VM Inventory by Site</button>
+            <button class="btn btn-ghost btn-sm" style="justify-content:flex-start">📄 Failed Sites Report</button>
+            <button class="btn btn-ghost btn-sm" style="justify-content:flex-start">📄 Change Log Export</button>
+            <hr style="border:none;border-top:1px solid var(--border2);margin:2px 0">
+            <button class="btn btn-ghost btn-sm" style="justify-content:flex-start">🔗 Push to Aria Log Insight</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ AUDIT LOG ============ -->
+    <div class="tab-pane" id="tab-audit">
+      <div class="card">
+        <div class="card-header">
+          <h4>Audit Trail</h4>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select class="form-control" style="width:150px"><option>All Events</option><option>Authentication</option><option>Job Created</option><option>Cancelled</option><option>Failures</option></select>
+            <input class="form-control" style="width:140px" type="date">
+            <button class="btn btn-ghost btn-sm">⬇ Export</button>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Timestamp (CST)</th><th>User</th><th>Event</th><th>Target</th><th>Detail</th><th>IP Address</th></tr></thead>
+          <tbody>
+            <tr><td class="text-sm" style="color:var(--muted)">Aug 24, 2026 01:55 CST</td><td><strong>jsmith</strong></td><td><span class="audit-tag at-created">JOB CREATED</span></td><td>JOB-2026-0847</td><td>Batch: 5 sites · CHG0042891 · Wave 1 · notify: ops-team@corp.com</td><td>10.1.4.22</td></tr>
+            <tr><td class="text-sm" style="color:var(--muted)">Aug 24, 2026 02:00 CST</td><td><strong>SYSTEM</strong></td><td><span class="audit-tag at-start">JOB STARTED</span></td><td>JOB-2026-0847</td><td>Scheduled trigger fired · executing as jsmith@corp.local</td><td>10.1.4.50</td></tr>
+            <tr><td class="text-sm" style="color:var(--muted)">Aug 24, 2026 02:10 CST</td><td><strong>SYSTEM</strong></td><td><span class="audit-tag at-start">vLCM APPLY</span></td><td>AK, Anchorage</td><td>POST /api/esx/settings/hosts/host-23/software?action=apply · task-3847</td><td>—</td></tr>
+            <tr><td class="text-sm" style="color:var(--muted)">Aug 19, 2026 09:42 CST</td><td><strong>jsmith</strong></td><td><span class="audit-tag at-query">QUERY</span></td><td>vCenter</td><td>Branch Offices datacenter · 107 total hosts · 100 standalone loaded · 7 clustered excluded · inventory written to SQL (QueryRunId: 14)</td><td>10.1.4.22</td></tr>
+            <tr><td class="text-sm" style="color:var(--muted)">Jul 10, 2026 02:14 CST</td><td><strong>jsmith</strong></td><td><span class="audit-tag at-cancel">CANCELLED</span></td><td>JOB-2026-0710</td><td>Job cancelled by jsmith before execution · CHG0042760</td><td>10.1.4.22</td></tr>
+            <tr><td class="text-sm" style="color:var(--muted)">Jul 21, 2026 03:14 CST</td><td><strong>SYSTEM</strong></td><td><span class="audit-tag at-fail">SITE FAILED</span></td><td>CO, Denver</td><td>VM 'dc-den01' did not shut down within 300s · site skipped · alert sent</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+
+<!-- ====== MODALS ====== -->
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <div class="modal-hdr"><h3>🔐 Authenticate to vCenter</h3><button class="modal-close" onclick="closeModal('authModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="alert alert-info">Your credentials authenticate directly to vCenter for all operations. A session token is held in memory for this browser session only — credentials are never stored on disk or in the database.</div>
+      <div class="form-group"><label>vCenter Server</label><input class="form-control" value="vcenter.corp.local" readonly style="background:#f5f5f5"></div>
+      <div class="form-group"><label>Username <span class="req">*</span></label><input class="form-control" id="authUser" value="CORP\jsmith"></div>
+      <div class="form-group"><label>Password <span class="req">*</span></label><input class="form-control" type="password" id="authPass" placeholder="••••••••"></div>
+      <div class="help-text" style="margin-top:-6px">Jobs run under these credentials. The username will appear in all audit log entries and job records.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('authModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="doQuery()">Authenticate &amp; Query Hosts</button>
+    </div>
+  </div>
+</div>
+
+<!-- VM ORDER MODAL -->
+<div class="modal-overlay" id="vmOrderModal">
+  <div class="modal">
+    <div class="modal-hdr"><h3>⚙️ VM Shutdown / Power-On Order</h3><button class="modal-close" onclick="closeModal('vmOrderModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="alert alert-info">Drag to reorder. <strong>Shutdown:</strong> top → bottom (DC last). <strong>Power-On:</strong> bottom → top (DC first). 120s delay between each VM on power-on.</div>
+      <p style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Site: <span id="vmOrderSite" style="color:var(--accent)"></span></p>
+      <ul class="vm-list" id="vmOrderList"></ul>
+      <p style="font-size:11px;color:var(--muted);margin-top:10px">VM order is saved to SQL — changes take effect on next job execution.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('vmOrderModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveVmOrder()">Save Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- CANCEL CONFIRM MODAL -->
+<div class="modal-overlay" id="cancelModal">
+  <div class="modal" style="width:400px">
+    <div class="modal-hdr"><h3>⚠️ Cancel Scheduled Job</h3><button class="modal-close" onclick="closeModal('cancelModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="alert alert-warn">This will permanently cancel the scheduled job. No hosts will be patched and no change will be made to vCenter.</div>
+      <div class="form-group"><label>Job</label><input class="form-control" id="cancelJobName" readonly style="background:#f5f5f5"></div>
+      <div class="form-group"><label>Reason for Cancellation <span class="req">*</span></label><input class="form-control" id="cancelReason" placeholder="e.g. Change window postponed, rescheduling"></div>
+      <div class="help-text">The cancellation reason will be recorded in the audit log.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('cancelModal')">Never Mind</button>
+      <button class="btn btn-danger" onclick="confirmCancel()">✕ Confirm Cancellation</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOG MODAL -->
+<div class="modal-overlay" id="logModal">
+  <div class="modal" style="width:580px;max-width:95vw">
+    <div class="modal-hdr"><h3>📋 Site Log — AK, Anchorage</h3><button class="modal-close" onclick="closeModal('logModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="log-viewer">
+<span class="log-ts">[02:00:06 CST]</span> <span class="log-ok">CONNECT</span> esxi-ak-anch.corp.local · Host: connected · Tools: 4/4 VMs ✓
+<span class="log-ts">[02:01:12 CST]</span> <span class="log-info">SHUTDOWN</span> → dc-ak-anch01 (DC) ...
+<span class="log-ts">[02:04:30 CST]</span> <span class="log-ok">SHUTDOWN</span> dc-ak-anch01 OFF ✓ (3m18s)
+<span class="log-ts">[02:04:31 CST]</span> <span class="log-info">SHUTDOWN</span> → sql-ak-anch01 (SQL) ...
+<span class="log-ts">[02:09:02 CST]</span> <span class="log-ok">SHUTDOWN</span> sql-ak-anch01 OFF ✓ (4m31s)
+<span class="log-ts">[02:09:03 CST]</span> <span class="log-info">SHUTDOWN</span> → app-ak-anch01 · print-ak-anch01 ...
+<span class="log-ts">[02:11:00 CST]</span> <span class="log-ok">SHUTDOWN</span> All 4 VMs confirmed OFF ✓
+<span class="log-ts">[02:11:01 CST]</span> <span class="log-info">MAINT</span>   Entering maintenance mode ...
+<span class="log-ts">[02:11:43 CST]</span> <span class="log-ok">MAINT</span>   Host in maintenance mode ✓
+<span class="log-ts">[02:11:44 CST]</span> <span class="log-info">vLCM</span>   POST /api/esx/settings/hosts/host-23/software?action=apply
+<span class="log-ts">[02:11:46 CST]</span> <span class="log-ok">vLCM</span>   Task: urn:vmomi:Task:task-3847 · Polling every 60s ...
+<span class="log-ts">[02:47:21 CST]</span> <span class="log-ok">vLCM</span>   SUCCEEDED ✓ (35m35s)
+<span class="log-ts">[02:47:22 CST]</span> <span class="log-info">MAINT</span>   Exiting maintenance mode ...
+<span class="log-ts">[02:47:54 CST]</span> <span class="log-ok">MAINT</span>   Host connected and ready ✓
+<span class="log-ts">[02:47:55 CST]</span> <span class="log-info">PWRON</span>   → dc-ak-anch01 · delay 120s
+<span class="log-ts">[02:49:55 CST]</span> <span class="log-info">PWRON</span>   → app-ak-anch01 · delay 120s
+<span class="log-ts">[02:51:55 CST]</span> <span class="log-info">PWRON</span>   <span class="spin">⟳</span> → print-ak-anch01 · waiting 120s ...</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('logModal')">Close</button>
+      <button class="btn btn-ghost btn-sm">⬇ Download Log</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal" style="width:500px">
+    <div class="modal-hdr"><h3>⚙️ Portal Settings</h3><button class="modal-close" onclick="closeModal('settingsModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="section-title" style="margin-bottom:10px">vCenter Connection</div>
+      <div class="form-group"><label>vCenter FQDN</label><input class="form-control" value="vcenter.corp.local"></div>
+      <div class="form-group"><label>Branch Offices Datacenter Object</label><input class="form-control" value="Branch Offices"></div>
+      <div class="section-title" style="margin:4px 0 10px">SQL Server (Remote — No Local DB Required)</div>
+      <div class="alert alert-success" style="margin-bottom:12px">✓ This portal connects to a remote SQL Enterprise server. No database software needs to be installed on the IIS web server.</div>
+      <div class="form-group"><label>SQL Server Host</label><input class="form-control" value="sql-enterprise.corp.local" placeholder="e.g. sql01.corp.local\MSSQLSERVER"></div>
+      <div class="form-group"><label>Database Name</label><input class="form-control" value="VMwareRemediationPortal"></div>
+      <div class="form-group"><label>Auth Method</label><select class="form-control"><option selected>Windows Authentication (Recommended)</option><option>SQL Server Authentication</option></select></div>
+      <div class="help-text" style="margin-top:-8px;margin-bottom:12px">With Windows Authentication, the IIS App Pool service account needs db_readwrite on the database. No SQL credentials stored in config files.</div>
+      <div class="section-title" style="margin:4px 0 10px">Storage &amp; Retention</div>
+      <div class="form-row">
+        <div class="form-group"><label>VM CSV Storage Root</label><input class="form-control" value="D:\VMware"></div>
+        <div class="form-group"><label>Max CSV Files Per Site</label><input class="form-control" type="number" value="5"></div>
+      </div>
+      <div class="section-title" style="margin:4px 0 10px">Notifications &amp; Logging</div>
+      <div class="form-group"><label>SMTP Server</label><input class="form-control" value="smtp.corp.local"></div>
+      <div class="form-group"><label>From Address</label><input class="form-control" value="vmware-remediation@corp.com"></div>
+      <div class="form-group"><label>Aria Log Insight Syslog (UDP 514)</label><input class="form-control" placeholder="loginsight.corp.local" value="loginsight.corp.local"></div>
+      <div class="section-title" style="margin:4px 0 10px">Timezone</div>
+      <div class="form-group"><label>Portal Timezone</label><select class="form-control"><option selected>Central Standard Time (CST / UTC-6)</option><option>Eastern Standard Time</option><option>Mountain Standard Time</option><option>Pacific Standard Time</option></select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('settingsModal')">Cancel</button>
+      <button class="btn btn-primary">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ====== JAVASCRIPT ====== -->
+<script>
+// ======== DATA ========
+const TARGET_VERSION = '8.0 U3k';
+const TARGET_BUILD   = '24674316';
+const CURRENT_PATCHED_VERSION = '8.0 U3k';
+const CURRENT_PATCHED_BUILD   = '24674316';
+const CURRENT_UNPATCHED_VERSION = '8.0 U3i';
+const CURRENT_UNPATCHED_BUILD   = '23305546';
+
+const branches = [
+  { state:'AK', stateName:'Alaska', sites:[
+    { name:'AK, Anchorage', host:'esxi-ak-anch', vms:['dc-ak-anch01','app-ak-anch01','print-ak-anch01','sql-ak-anch01'], compliance:'ok',
+      currentVersion:'8.0 U3k', currentBuild:'24674316', targetVersion:'8.0 U3k', targetBuild:'24674316' }
+  ]},
+  { state:'AL', stateName:'Alabama', sites:[
+    { name:'AL, Birmingham', host:'esxi-al-birm', vms:['dc-al-birm01','sql-al-birm01','app-al-birm01','app-al-birm02','print-al-birm01'], compliance:'needed',
+      currentVersion:'8.0 U3i', currentBuild:'23305546', targetVersion:'8.0 U3k', targetBuild:'24674316' }
+  ]},
+  { state:'AR', stateName:'Arkansas', sites:[
+    { name:'AR, Fayetteville', host:'esxi-ar-fay', vms:['dc-ar-fay01','sql-ar-fay01','app-ar-fay01','app-ar-fay02'], compliance:'needed',
+      currentVersion:'8.0 U3i', currentBuild:'23305546', targetVersion:'8.0 U3k', targetBuild:'24674316' },
+    { name:'AR, Little Rock', host:'esxi-ar-lr', vms:['dc-ar-lr01','sql-ar-lr01','app-ar-lr01'], compliance:'needed',
+      currentVersion:'8.0 U3i', currentBuild:'23305546', targetVersion:'8.0 U3k', targetBuild:'24674316' }
+  ]},
+  { state:'AZ', stateName:'Arizona', sites:[
+    { name:'AZ, Tempe', host:'esxi-az-temp', vms:['dc-az-temp01','sql-az-temp01','app-az-temp01','print-az-temp01'], compliance:'ok',
+      currentVersion:'8.0 U3k', currentBuild:'24674316', targetVersion:'8.0 U3k', targetBuild:'24674316' },
+    { name:'AZ, Tucson', host:'esxi-az-tucs', vms:['dc-az-tucs01','sql-az-tucs01','app-az-tucs01'], compliance:'ok',
+      currentVersion:'8.0 U3k', currentBuild:'24674316', targetVersion:'8.0 U3k', targetBuild:'24674316' }
+  ]},
+  { state:'CA', stateName:'California', sites:[
+    { name:'CA, Los Angeles', host:'esxi-ca-la', vms:['dc-ca-la01','sql-ca-la01','app-ca-la01','app-ca-la02'], compliance:'needed',
+      currentVersion:'8.0 U3i', currentBuild:'23305546', targetVersion:'8.0 U3k', targetBuild:'24674316' },
+    { name:'CA, San Diego', host:'esxi-ca-sd', vms:['dc-ca-sd01','sql-ca-sd01','app-ca-sd01'], compliance:'needed',
+      currentVersion:'8.0 U3i', currentBuild:'23305546', targetVersion:'8.0 U3k', targetBuild:'24674316' },
+    { name:'CA, Sacramento', host:'esxi-ca-sac', vms:['dc-ca-sac01','sql-ca-sac01','app-ca-sac01'], compliance:'ok',
+      currentVersion:'8.0 U3k', currentBuild:'24674316', targetVersion:'8.0 U3k', targetBuild:'24674316' }
+  ]},
+  { state:'CO', stateName:'Colorado', sites:[
+    { name:'CO, Denver', host:'esxi-co-den', vms:['dc-co-den01','sql-co-den01','app-co-den01','print-co-den01'], compliance:'needed',
+      currentVersion:'8.0 U3i', currentBuild:'23305546', targetVersion:'8.0 U3k', targetBuild:'24674316' }
+  ]},
+  { state:'FL', stateName:'Florida', sites:[
+    { name:'FL, Miami', host:'esxi-fl-mia', vms:['dc-fl-mia01','sql-fl-mia01','app-fl-mia01'], compliance:'ok',
+      currentVersion:'8.0 U3k', currentBuild:'24674316', targetVersion:'8.0 U3k', targetBuild:'24674316' },
+    { name:'FL, Tampa', host:'esxi-fl-tam', vms:['dc-fl-tam01','sql-fl-tam01','app-fl-tam01','app-fl-tam02'], compliance:'needed',
+      currentVersion:'8.0 U3i', currentBuild:'23305546', targetVersion:'8.0 U3k', targetBuild:'24674316' }
+  ]},
+  { state:'TX', stateName:'Texas', sites:[
+    { name:'TX, Dallas', host:'esxi-tx-dal', vms:['dc-tx-dal01','sql-tx-dal01','app-tx-dal01'], compliance:'needed',
+      currentVersion:'8.0 U3i', currentBuild:'23305546', targetVersion:'8.0 U3k', targetBuild:'24674316' },
+    { name:'TX, Houston', host:'esxi-tx-hou', vms:['dc-tx-hou01','sql-tx-hou01','app-tx-hou01','print-tx-hou01'], compliance:'needed',
+      currentVersion:'8.0 U3i', currentBuild:'23305546', targetVersion:'8.0 U3k', targetBuild:'24674316' },
+    { name:'TX, Austin', host:'esxi-tx-aus', vms:['dc-tx-aus01','sql-tx-aus01','app-tx-aus01'], compliance:'ok',
+      currentVersion:'8.0 U3k', currentBuild:'24674316', targetVersion:'8.0 U3k', targetBuild:'24674316' }
+  ]}
+];
+
+let allSites = branches.flatMap(g => g.sites.map(s => ({ ...s, state: g.state, stateName: g.stateName })));
+let selectedBatchSites = new Set();
+let vmOrders = {};
+let currentVmOrderSite = null;
+let currentUser = null;
+let cancelTargetJob = null;
+let dataLoaded = false;
+let currentStep = 1;
+
+// ======== AUTH / QUERY ========
+function openAuthModal() { openModal('authModal'); }
+
+function doQuery() {
+  const user = document.getElementById('authUser').value.trim() || 'CORP\\jsmith';
+  currentUser = user;
+  closeModal('authModal');
+  const btn = document.getElementById('queryBtn');
+  const status = document.getElementById('queryStatus');
+  btn.disabled = true; btn.innerHTML = '<span class="spin">⟳</span> Querying...';
+  status.innerHTML = '<span class="spin">⟳</span> Authenticating as ' + user + '...';
+  setTimeout(() => status.innerHTML = '<span class="spin">⟳</span> Loading Branch Offices datacenter · excluding clustered hosts...', 900);
+  setTimeout(() => status.innerHTML = '<span class="spin">⟳</span> Discovering standalone hosts · enumerating VMs · writing inventory to SQL...', 1900);
+  setTimeout(() => {
+    dataLoaded = true;
+    btn.disabled = false; btn.innerHTML = '⟳ Query Hosts';
+    status.innerHTML = '✓ ' + allSites.length + ' standalone hosts loaded · clustered hosts excluded · inventory saved to SQL';
+    document.getElementById('lastQueried').textContent = 'Queried: ' + new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});
+    document.getElementById('sideSearch').disabled = false;
+    document.getElementById('newJobBtn').style.display = '';
+    document.getElementById('precheckBtn').style.display = '';
+    document.getElementById('totalSites').textContent = allSites.length;
+    const initials = user.split('\\').pop().substring(0,2).toUpperCase();
+    document.getElementById('userAvatar').textContent = initials;
+    document.getElementById('userName').textContent = user;
+    document.getElementById('userRole').textContent = 'Authenticated · vcenter.corp.local';
+    document.getElementById('userChip').style.display = 'flex';
+    renderSideTree();
+    renderHostSelTable();
+    document.getElementById('batchNotQueried').style.display = 'none';
+    document.getElementById('batchForm').style.display = 'block';
+    document.getElementById('createdByDisplay').value = user;
+  }, 3300);
+}
+
+// ======== SIDEBAR ========
+function renderSideTree(filter = '') {
+  const tree = document.getElementById('sideTree');
+  tree.innerHTML = '';
+  const ul = document.createElement('ul'); ul.className = 'host-tree';
+  branches.forEach(g => {
+    const filtered = g.sites.filter(s => !filter || s.name.toLowerCase().includes(filter.toLowerCase()));
+    if (!filtered.length) return;
+    const li = document.createElement('li'); li.className = 'state-group';
+    const lbl = document.createElement('div'); lbl.className = 'state-label';
+    const chev = document.createElement('span'); chev.className = 'chevron open'; chev.textContent = '▶';
+    lbl.append(chev, g.state + ' — ' + g.stateName + ' (' + filtered.length + ')');
+    lbl.onclick = () => { sl.classList.toggle('open'); chev.classList.toggle('open'); };
+    li.appendChild(lbl);
+    const sl = document.createElement('ul'); sl.className = 'sites-list open';
+    filtered.forEach(site => {
+      const sli = document.createElement('li'); sli.className = 'site-item' + (selectedBatchSites.has(site.name) ? ' selected' : '');
+      sli.innerHTML = `<input type="checkbox" ${selectedBatchSites.has(site.name)?'checked':''} style="accent-color:var(--accent)"><span class="site-name">${site.name}</span><span class="cbadge ${site.compliance==='ok'?'ok':'needed'}">${site.compliance==='ok'?'✓ OK':'⚠ Needs'}</span>`;
+      sli.querySelector('input').onchange = e => syncSiteFromSidebar(site.name, e.target.checked);
+      sl.appendChild(sli);
+    });
+    li.appendChild(sl); ul.appendChild(li);
+  });
+  tree.appendChild(ul);
+}
+
+function syncSiteFromSidebar(name, checked) {
+  if (checked) selectedBatchSites.add(name); else selectedBatchSites.delete(name);
+  renderSideTree(document.getElementById('sideSearch').value);
+  syncTableCheckboxes();
+}
+
+// ======== HOST SELECTION TABLE ========
+function renderHostSelTable() {
+  const tbody = document.getElementById('hostSelBody');
+  tbody.innerHTML = '';
+  allSites.forEach(site => {
+    const tr = document.createElement('tr');
+    tr.id = 'row-' + site.name.replace(/[^a-z0-9]/gi,'_');
+    tr.className = 'row-' + (selectedBatchSites.has(site.name) ? 'selected' : '');
+    tr.innerHTML = `
+      <td><input type="checkbox" class="site-cb" data-site="${site.name}" ${selectedBatchSites.has(site.name)?'checked':''} style="accent-color:var(--accent)" onchange="toggleBatchSite('${site.name}',this.checked)"></td>
+      <td><strong>${site.name}</strong><br><span style="font-size:10px;color:var(--muted)">${site.host}.corp.local</span></td>
+      <td>${site.state} — ${site.stateName}</td>
+      <td><span style="font-weight:700;color:var(--accent)">${site.vms.length}</span></td>
+      <td><span class="cbadge ${site.compliance==='ok'?'ok':'needed'}">${site.compliance==='ok'?'✓ Patched':'⚠ Needs Patch'}</span></td>
+      <td style="font-size:11px;line-height:1.5">
+        <span style="font-family:monospace;color:${site.compliance==='needed'?'#c0392b':'#2e7d32'};font-weight:700">${site.currentVersion}</span>
+        <br><span style="font-size:9px;color:var(--muted)">Build ${site.currentBuild}</span>
+      </td>
+      <td style="font-size:11px;line-height:1.5">
+        ${site.compliance==='needed'
+          ? `<span style="font-size:13px;margin-right:3px;color:#2e7d32">↑</span><span style="font-family:monospace;color:#2e7d32;font-weight:700">${site.targetVersion}</span><br><span style="font-size:9px;color:var(--muted)">Build ${site.targetBuild}</span>`
+          : `<span style="color:#2e7d32;font-weight:700">✓ Up to date</span><br><span style="font-size:9px;color:var(--muted)">No upgrade needed</span>`
+        }
+      </td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openVmOrder('${site.name}')">✏ Order</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function filterBatchTable(val) {
+  document.querySelectorAll('#hostSelBody tr').forEach(tr => {
+    tr.style.display = tr.textContent.toLowerCase().includes(val.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function toggleBatchSite(name, checked) {
+  const site = allSites.find(s => s.name === name);
+  if (checked) { selectedBatchSites.add(name); if (!vmOrders[name]) vmOrders[name] = [...site.vms]; }
+  else selectedBatchSites.delete(name);
+  updateSelCount();
+  highlightSelectedRows();
+  syncSidebar();
+}
+
+function updateSelCount() {
+  const n = selectedBatchSites.size;
+  document.getElementById('selCount').textContent = n + ' host' + (n!==1?'s':'') + ' selected';
+  document.getElementById('toStep2Btn').disabled = n === 0;
+}
+
+function highlightSelectedRows() {
+  document.querySelectorAll('.site-cb').forEach(cb => {
+    const row = cb.closest('tr');
+    if (row) row.className = selectedBatchSites.has(cb.dataset.site) ? 'row-selected' : '';
+  });
+}
+
+function syncTableCheckboxes() {
+  document.querySelectorAll('.site-cb').forEach(cb => {
+    cb.checked = selectedBatchSites.has(cb.dataset.site);
+  });
+  highlightSelectedRows();
+  updateSelCount();
+}
+
+function syncSidebar() { renderSideTree(document.getElementById('sideSearch').value); }
+
+function toggleAllHosts(checked) { allSites.forEach(s => { if (checked) { selectedBatchSites.add(s.name); if (!vmOrders[s.name]) vmOrders[s.name]=[...s.vms]; } else selectedBatchSites.delete(s.name); }); syncTableCheckboxes(); syncSidebar(); updateSelCount(); }
+function selectAllHosts() { document.getElementById('masterCb').checked = true; toggleAllHosts(true); }
+function deselectAllHosts() { document.getElementById('masterCb').checked = false; toggleAllHosts(false); }
+function selectNeededOnly() { deselectAllHosts(); allSites.filter(s=>s.compliance==='needed').forEach(s=>{ selectedBatchSites.add(s.name); if(!vmOrders[s.name]) vmOrders[s.name]=[...s.vms]; }); syncTableCheckboxes(); syncSidebar(); updateSelCount(); }
+
+// ======== VM ORDER MODAL ========
+function openVmOrder(siteName) {
+  currentVmOrderSite = siteName;
+  const site = allSites.find(s => s.name === siteName);
+  const order = vmOrders[siteName] || site.vms;
+  document.getElementById('vmOrderSite').textContent = siteName;
+  const list = document.getElementById('vmOrderList');
+  list.innerHTML = '';
+  const typeMap = {dc:'Domain Controller',sql:'SQL Server',app:'Application',print:'Print Server'};
+  const colorMap = {dc:'#3949ab',sql:'#e65100',app:'#2e7d32',print:'#6a1b9a'};
+  order.forEach((vm, i) => {
+    const type = Object.keys(typeMap).find(k => vm.startsWith(k+'-')) || 'app';
+    const li = document.createElement('li'); li.className = 'vm-item'; li.draggable = true; li.dataset.vm = vm;
+    li.innerHTML = `<span class="drag-h">⠿</span><span style="width:20px;height:20px;border-radius:50%;background:#eee;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">${i+1}</span><span style="flex:1;font-size:12px">${vm}</span><span style="font-size:10px;padding:1px 6px;border-radius:10px;background:${colorMap[type]}20;color:${colorMap[type]};font-weight:700">${typeMap[type]}</span>`;
+    list.appendChild(li);
+  });
+  enableDrag(list);
+  openModal('vmOrderModal');
+}
+
+function enableDrag(list) {
+  let drag = null;
+  list.querySelectorAll('.vm-item').forEach(item => {
+    item.addEventListener('dragstart', () => { drag = item; setTimeout(() => item.style.opacity='0.4', 0); });
+    item.addEventListener('dragend', () => { drag=null; item.style.opacity='1'; renum(list); });
+    item.addEventListener('dragover', e => { e.preventDefault(); const r=item.getBoundingClientRect(); list.insertBefore(drag, e.clientY<r.top+r.height/2?item:item.nextSibling); });
+  });
+}
+
+function renum(list) { list.querySelectorAll('.vm-item').forEach((li,i) => { const spans=li.querySelectorAll('span'); if(spans[1]) spans[1].textContent=i+1; }); }
+function saveVmOrder() { vmOrders[currentVmOrderSite]=[...document.getElementById('vmOrderList').querySelectorAll('.vm-item')].map(li=>li.dataset.vm); closeModal('vmOrderModal'); }
+
+// ======== STEPS ========
+function goStep(n) {
+  if (n === 2 && selectedBatchSites.size === 0) { alert('Select at least one host first.'); return; }
+  if (n === 3) {
+    const email = document.getElementById('notifyEmail').value.trim();
+    const chg = document.getElementById('chgTicket').value.trim();
+    if (!email) { document.getElementById('notifyEmail').classList.add('invalid'); document.getElementById('notifyEmail').focus(); return; } else document.getElementById('notifyEmail').classList.remove('invalid');
+    if (!chg) { document.getElementById('chgTicket').classList.add('invalid'); document.getElementById('chgTicket').focus(); return; } else document.getElementById('chgTicket').classList.remove('invalid');
+    buildReview();
+  }
+  currentStep = n;
+  [1,2,3].forEach(i => {
+    document.getElementById('step'+i).style.display = i===n ? '' : 'none';
+    const done = i < n, active = i === n;
+    const c = document.getElementById('sc'+i), l = document.getElementById('sl'+i);
+    c.className = 'step-circle' + (done?' done':active?' active':'');
+    c.textContent = done ? '✓' : i;
+    l.className = 'step-lbl' + (active?' active':done?' done':'');
+    if (i < 3) { const conn = document.getElementById('conn'+i); if(conn) conn.className = 'step-conn' + (i<n?' done':''); }
+  });
+}
+
+function buildReview() {
+  const d = document.getElementById('schedDate').value;
+  const t = document.getElementById('schedTime').value;
+  const [h, m] = t.split(':').map(Number);
+  const utcH = (h + 6) % 24;
+  const utcStr = String(utcH).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ' UTC';
+
+  document.getElementById('rv-name').textContent = document.getElementById('jobName').value;
+  document.getElementById('rv-chg').textContent = document.getElementById('chgTicket').value;
+  document.getElementById('rv-time').textContent = d + ' at ' + t + ' CST';
+  document.getElementById('rv-utc').textContent = d + ' at ' + utcStr;
+  document.getElementById('rv-sites').textContent = selectedBatchSites.size + ' hosts';
+  document.getElementById('rv-parallel').textContent = document.getElementById('maxParallel').value + ' max simultaneous';
+  document.getElementById('rv-delay').textContent = document.getElementById('powerOnDelay').value;
+  document.getElementById('rv-email').textContent = document.getElementById('notifyEmail').value;
+  // Derive target image from selected sites (all sites target the same vLCM image)
+  const selectedSiteObjs = allSites.filter(s => selectedBatchSites.has(s.name));
+  const targetVer = selectedSiteObjs.length ? selectedSiteObjs[0].targetVersion : TARGET_VERSION;
+  const targetBld = selectedSiteObjs.length ? selectedSiteObjs[0].targetBuild : TARGET_BUILD;
+  const needsUpgrade = selectedSiteObjs.filter(s => s.compliance === 'needed').length;
+  document.getElementById('rv-image').textContent = 'ESXi ' + targetVer + (needsUpgrade ? ' (' + needsUpgrade + ' host' + (needsUpgrade!==1?'s':'') + ' will upgrade)' : ' — all already compliant');
+  document.getElementById('rv-build').textContent = 'Build ' + targetBld;
+  document.getElementById('rv-runas').textContent = document.getElementById('runAsAccount').value || 'CORP\\svc-esxipatch';
+  document.getElementById('rv-creator').textContent = currentUser || 'Unknown';
+  document.getElementById('reviewUser').textContent = currentUser;
+  const chips = document.getElementById('rv-site-chips');
+  chips.innerHTML = '';
+  selectedBatchSites.forEach(s => { const sp = document.createElement('span'); sp.className = 'review-site-chip'; sp.textContent = s; chips.appendChild(sp); });
+  document.getElementById('confirmCb').checked = false;
+  document.getElementById('scheduleBtn').disabled = true;
+}
+
+function submitJob() {
+  closeModal && null;
+  const jid = 'JOB-2026-0' + (848 + Math.floor(Math.random()*10));
+  switchTab('active');
+  document.getElementById('activeCount').textContent = '3';
+  setTimeout(() => alert('✓ Job Scheduled!\n\nJob ID: ' + jid + '\nSites: ' + selectedBatchSites.size + '\nScheduled: ' + document.getElementById('schedDate').value + ' ' + document.getElementById('schedTime').value + ' CST\n\nYou will receive email confirmation at:\n' + document.getElementById('notifyEmail').value + '\n\nJob will appear in Active / Scheduled tab.'), 100);
+  selectedBatchSites.clear(); syncTableCheckboxes(); syncSidebar(); updateSelCount(); goStep(1);
+  document.getElementById('confirmCb').checked = false;
+}
+
+function resetBatchForm() { selectedBatchSites.clear(); syncTableCheckboxes(); updateSelCount(); if(dataLoaded) goStep(1); }
+
+// ======== TIME DISPLAY ========
+function updateTimeDisplay() {
+  const t = document.getElementById('schedTime').value;
+  if (!t) return;
+  const [h, m] = t.split(':').map(Number);
+  const utcH = (h + 6) % 24;
+  const utcStr = String(utcH).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+  document.getElementById('timeDisplay').textContent = t + ' CST = ' + utcStr + ' UTC · All times execute in Central Standard Time';
+}
+
+// ======== CANCEL JOB ========
+function cancelJob(id, name) {
+  cancelTargetJob = id;
+  document.getElementById('cancelJobName').value = id + ' — ' + name;
+  document.getElementById('cancelReason').value = '';
+  openModal('cancelModal');
+}
+
+function confirmCancel() {
+  const reason = document.getElementById('cancelReason').value.trim();
+  if (!reason) { document.getElementById('cancelReason').classList.add('invalid'); document.getElementById('cancelReason').focus(); return; }
+  closeModal('cancelModal');
+  alert('✓ Job ' + cancelTargetJob + ' has been cancelled.\n\nReason: "' + reason + '" recorded in audit log.\nNotification email will be sent to job creator.');
+}
+
+function abortJob() {
+  if (confirm('Abort the running job? Any hosts currently in maintenance mode will attempt to exit maintenance mode before aborting.')) {
+    alert('Abort signal sent. Monitoring hosts for safe abort. You will receive an email when the abort is complete.');
+  }
+}
+
+// ======== PRE-CHECK ========
+function runPrecheck() {
+  const s = document.getElementById('queryStatus');
+  s.innerHTML = '<span class="spin">⟳</span> Running pre-check on all hosts...';
+  setTimeout(() => s.innerHTML = '✓ Pre-check complete — all hosts reachable · VMware Tools: OK on all VMs · No hosts in maintenance mode', 2200);
+}
+
+// ======== TABS ========
+function switchTab(name) {
+  const names = ['batch','active','history','reports','audit'];
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', names[i]===name));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id==='tab-'+name));
+}
+
+// ======== MODALS ========
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
+</script>
+</body>
+</html>
