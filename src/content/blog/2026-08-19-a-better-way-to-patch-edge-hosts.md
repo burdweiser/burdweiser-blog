@@ -132,7 +132,7 @@ All files are in the [burdweiser/edge-patching](https://github.com/burdweiser/ed
 
 - **[esxi-portal-schema.sql](https://github.com/burdweiser/edge-patching/raw/main/esxi-portal-schema.sql)** — complete `CREATE TABLE` script for all six tables (`QueryRuns`, `SiteVMs`, `VMInventorySnapshots`, `Jobs`, `JobSites`, `AuditLog`) plus GRANT statements for both service accounts. Send this to your DBA to run against a new database.
 
-- **[esxi-patching-portal.html](https://github.com/burdweiser/edge-patching/raw/main/esxi-patching-portal.html)** — the full portal frontend as a standalone HTML file. Save and open locally to explore the interface without any backend.
+- **[esxi-patching-portal.html](https://burdweiser.github.io/edge-patching/esxi-patching-portal.html)** — the full portal frontend as a standalone HTML file. Opens directly in a browser — no backend or vCenter connection required.
 
 Both files are generic — no internal hostnames, no company names, no hardcoded credentials. Swap in your own values where the comments tell you to.
 
